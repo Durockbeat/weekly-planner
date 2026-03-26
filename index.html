@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── TOKENS ── */
+:root {
+  --bg:          #121212;
+  --surface:     #1e1e1e;
+  --surface2:    #252525;
+  --border:      #2e2e2e;
+  --border2:     #383838;
+  --text:        #e8e6e1;
+  --text-dim:    #a09a92;
+  --text-faint:  #5a5550;
+  --accent:      #d97047;
+  --accent-dim:  #3a1f10;
+  --accent-glow: rgba(217,112,71,.18);
+  --week-hl:     rgba(217,112,71,.13);
+  --shadow:      0 4px 20px rgba(0,0,0,.55);
+  --shadow-sm:   0 2px 8px  rgba(0,0,0,.4);
+  --sidebar-w:   272px;
+  --time-col:    58px;
+  --slot-h:      24px;   /* px per 15-min slot */
+  --header-h:    54px;
+  --banner-h:    40px;
+  --radius:      10px;
+  --radius-sm:   6px;
+  --col-min:     90px;
+}
+:root {
+  --c-blue-bg:rgba(59,130,246,.18);   --c-blue-brd:rgba(59,130,246,.5);   --c-blue-txt:#93c5fd;  --c-blue-dot:#3b82f6;
+  --c-green-bg:rgba(34,197,94,.15);   --c-green-brd:rgba(34,197,94,.45);  --c-green-txt:#86efac; --c-green-dot:#22c55e;
+  --c-yellow-bg:rgba(234,179,8,.15);  --c-yellow-brd:rgba(234,179,8,.45); --c-yellow-txt:#fde047;--c-yellow-dot:#eab308;
+  --c-red-bg:rgba(239,68,68,.15);     --c-red-brd:rgba(239,68,68,.45);    --c-red-txt:#fca5a5;   --c-red-dot:#ef4444;
+  --c-purple-bg:rgba(168,85,247,.15); --c-purple-brd:rgba(168,85,247,.45);--c-purple-txt:#d8b4fe;--c-purple-dot:#a855f7;
+  --c-gray-bg:rgba(156,163,175,.12);  --c-gray-brd:rgba(156,163,175,.38); --c-gray-txt:#d1d5db;  --c-gray-dot:#9ca3af;
+}
+
+/* ── BODY / APP ── */
+body {
+  font-family:'DM Mono',monospace;
+  background:var(--bg); color:var(--text);
+  height:100dvh; display:flex; flex-direction:column; overflow:hidden;
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+#app { display:flex; flex:1; overflow:hidden; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width:var(--sidebar-w); background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column; flex-shrink:0;
+  overflow-y:auto; overflow-x:hidden; z-index:20;
+}
+.logo { font-family:'Fraunces',serif; font-size:21px; font-weight:600;
+  color:var(--text); letter-spacing:-.5px; padding:20px 18px 0; }
+.logo span { color:var(--accent); }
+.sb-divider { height:1px; background:var(--border); margin:13px 0; }
+.sb-section { padding:0 16px; flex-shrink:0; }
+.section-title { font-size:9.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text-faint); margin-bottom:8px; }
+
+/* calendar */
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
+.cal-month-label { font-family:'Fraunces',serif; font-size:13px; font-weight:600; color:var(--text); }
+.cal-arrow { background:none; border:none; cursor:pointer; color:var(--text-dim);
+  font-size:16px; padding:2px 6px; border-radius:5px; line-height:1;
+  transition:background .12s,color .12s; }
+.cal-arrow:hover { background:var(--border2); color:var(--text); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+.cal-dow { text-align:center; font-size:9px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--text-faint); padding-bottom:4px; }
+.cal-day { text-align:center; font-size:11px; line-height:22px; height:22px;
+  border-radius:4px; cursor:pointer; color:var(--text-dim); transition:background .1s,color .1s; }
+.cal-day:hover { background:var(--border2); color:var(--text); }
+.cal-day.in-month { color:var(--text-dim); }
+.cal-day.today-day { color:var(--accent); font-weight:500; }
+.cal-day.in-sel-week { background:var(--week-hl); color:var(--accent); border-radius:0; }
+.cal-day.week-start { border-radius:5px 0 0 5px; }
+.cal-day.week-end   { border-radius:0 5px 5px 0; }
+.cal-day.week-start.week-end { border-radius:5px; }
+.cal-day.empty { pointer-events:none; }
+#today-btn { display:block; width:100%; margin-top:7px; padding:5px;
+  background:none; border:1px solid var(--border2); border-radius:var(--radius-sm);
+  font-family:'DM Mono',monospace; font-size:10px; color:var(--text-faint);
+  cursor:pointer; letter-spacing:.05em; text-align:center;
+  transition:border-color .12s,color .12s,background .12s; }
+#today-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-dim); }
+
+/* week label */
+#sb-week-label { font-size:10.5px; color:var(--text-dim); line-height:1.4; font-family:'Fraunces',serif; }
+#sb-this-week-badge { display:inline-block; margin-left:6px; font-size:8.5px;
+  font-family:'DM Mono',monospace; background:var(--accent-dim); color:var(--accent);
+  border-radius:10px; padding:1px 6px; letter-spacing:.06em; text-transform:uppercase;
+  vertical-align:middle; opacity:0; transition:opacity .2s; }
+#sb-this-week-badge.visible { opacity:1; }
+
+/* task creator */
+#task-input { width:100%; padding:8px 11px; border:1px solid var(--border2);
+  border-radius:var(--radius-sm); background:var(--bg); color:var(--text);
+  font-family:'DM Mono',monospace; font-size:12px; outline:none;
+  transition:border-color .15s; margin-bottom:8px; }
+#task-input:focus { border-color:var(--accent); }
+#task-input::placeholder { color:var(--text-faint); }
+.color-swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:5px; margin-bottom:8px; }
+.swatch { aspect-ratio:1; border-radius:50%; cursor:pointer; border:2px solid transparent;
+  transition:transform .12s,border-color .12s,box-shadow .12s; }
+.swatch:hover { transform:scale(1.18); }
+.swatch.selected { border-color:var(--text); box-shadow:0 0 0 1px var(--bg); transform:scale(1.12); }
+#add-btn { width:100%; padding:8px; background:var(--accent); color:#fff; border:none;
+  border-radius:var(--radius-sm); font-family:'DM Mono',monospace; font-size:12px;
+  cursor:pointer; letter-spacing:.04em; transition:opacity .15s,transform .1s; }
+#add-btn:hover { opacity:.85; transform:translateY(-1px); }
+#add-btn:active { transform:translateY(0); }
+
+/* task list */
+#task-list-wrap { padding:0 16px 16px; flex:1; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+#task-list { display:flex; flex-direction:column; gap:5px; overflow-y:auto; flex:1; }
+.task-tag { display:flex; align-items:center; gap:7px; padding:7px 9px;
+  border-radius:var(--radius-sm); font-size:11px; cursor:grab;
+  user-select:none; border:1px solid; flex-shrink:0;
+  transition:transform .12s,box-shadow .12s,opacity .12s; }
+.task-tag:hover { transform:translateY(-1px); box-shadow:var(--shadow-sm); }
+.task-tag:active { cursor:grabbing; }
+.task-tag.dragging { opacity:.35; }
+.tag-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.tag-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tag-actions { display:flex; gap:2px; opacity:0; transition:opacity .15s; }
+.task-tag:hover .tag-actions { opacity:1; }
+.tag-btn { background:none; border:none; cursor:pointer; font-size:13px; color:inherit;
+  opacity:.55; padding:0 2px; line-height:1; transition:opacity .1s; font-family:inherit; }
+.tag-btn:hover { opacity:1; }
+
+/* ── EDIT MODAL ── */
+#edit-modal-backdrop { display:none; position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,.65); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center; }
+#edit-modal-backdrop.open { display:flex; }
+#edit-modal { background:var(--surface2); border:1px solid var(--border2);
+  border-radius:var(--radius); padding:20px; width:min(340px,92vw); box-shadow:var(--shadow); }
+#edit-modal h3 { font-family:'Fraunces',serif; font-size:15px; margin-bottom:14px;
+  color:var(--text); font-weight:600; }
+#edit-label-input { width:100%; padding:8px 11px; border:1px solid var(--border2);
+  border-radius:var(--radius-sm); background:var(--bg); color:var(--text);
+  font-family:'DM Mono',monospace; font-size:12px; outline:none;
+  transition:border-color .15s; margin-bottom:12px; }
+#edit-label-input:focus { border-color:var(--accent); }
+.edit-color-swatches { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-bottom:16px; }
+.edit-modal-btns { display:flex; gap:8px; }
+.modal-btn { flex:1; padding:8px; border-radius:var(--radius-sm); font-family:'DM Mono',monospace;
+  font-size:11.5px; cursor:pointer; border:1px solid var(--border2);
+  background:var(--surface); color:var(--text-dim); transition:background .12s,color .12s; }
+.modal-btn:hover { background:var(--border2); color:var(--text); }
+.modal-btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+.modal-btn.primary:hover { opacity:.85; }
+.modal-btn.danger { color:#fca5a5; border-color:rgba(239,68,68,.3); }
+.modal-btn.danger:hover { background:rgba(239,68,68,.15); color:#f87171; }
+
+/* ── MAIN ── */
+#main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+
+/* banner */
+#week-banner { background:var(--surface); border-bottom:1px solid var(--border);
+  padding:0 14px; display:flex; align-items:center; gap:8px;
+  flex-shrink:0; height:var(--banner-h); }
+#week-banner-label { font-family:'Fraunces',serif; font-size:13px; font-weight:600;
+  color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#current-week-pill { font-size:8.5px; background:var(--accent-dim); color:var(--accent);
+  border-radius:10px; padding:2px 7px; letter-spacing:.06em;
+  text-transform:uppercase; display:none; white-space:nowrap; }
+#current-week-pill.visible { display:inline; }
+.banner-arrow { background:none; border:1px solid var(--border2); border-radius:var(--radius-sm);
+  cursor:pointer; color:var(--text-dim); font-size:13px; padding:3px 9px; line-height:1.4;
+  transition:border-color .12s,color .12s,background .12s;
+  font-family:'DM Mono',monospace; flex-shrink:0; }
+.banner-arrow:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-dim); }
+#mob-menu-btn { display:none; background:none; border:none; cursor:pointer;
+  color:var(--text-dim); font-size:18px; padding:4px; line-height:1; flex-shrink:0; }
+
+/* ── GRID OUTER ── */
+#grid-outer { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+#grid-header-wrap { overflow:hidden; flex-shrink:0; }
+#grid-header {
+  display:grid;
+  grid-template-columns: var(--time-col) repeat(7, minmax(var(--col-min), 1fr));
+  border-bottom:1px solid var(--border); background:var(--surface);
+  height:var(--header-h);
+  min-width: calc(var(--time-col) + 7 * var(--col-min));
+}
+.header-cell { display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:9.5px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--text-faint); border-right:1px solid var(--border); padding:5px 3px; }
+.header-cell:last-child { border-right:none; }
+.header-cell:first-child { border-right:1px solid var(--border); }
+.header-cell.today { color:var(--accent); }
+.day-num { font-family:'Fraunces',serif; font-size:19px; font-weight:600; color:var(--text); line-height:1.1; }
+.header-cell.today .day-num { background:var(--accent); color:#fff; width:28px; height:28px;
+  border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; }
+
+/* scrollable grid body */
+#grid-scroll { flex:1; overflow:auto; position:relative; }
+
+/* ── THE GRID TABLE ── */
+/*
+  Layout: a CSS grid for time-slot rows × 8 columns (time + 7 days).
+  Events are absolutely positioned within each day column.
+  Each day column is a relative container stacked on top of the slot rows.
+*/
+#grid-bg {
+  display: grid;
+  grid-template-columns: var(--time-col) repeat(7, minmax(var(--col-min), 1fr));
+  min-width: calc(var(--time-col) + 7 * var(--col-min));
+  position: relative;
+}
+
+/* time labels column */
+.time-label {
+  height:var(--slot-h); display:flex; align-items:center; justify-content:flex-end;
+  padding-right:8px; font-size:9.5px; color:var(--text-faint);
+  border-right:1px solid var(--border); user-select:none;
+  position:relative; top:-7px;
+}
+.time-label.hour { color:var(--text-dim); font-weight:500; }
+
+/* slot cells (background grid) */
+.slot-cell {
+  height:var(--slot-h);
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  position:relative;
+  transition:background .08s;
+}
+.slot-cell:last-child { border-right:none; }
+.slot-cell.hour-top { border-top:1px solid var(--border2); }
+.slot-cell.drop-hi  { background:var(--accent-glow) !important; }
+
+/* ── DAY COLUMNS (event layer) ── */
+/*
+  After the background grid rows, we overlay 7 absolutely-positioned
+  day columns that span the full height. Events live inside these.
+*/
+#event-layer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;    /* pass clicks through to bg grid by default */
+  display: grid;
+  grid-template-columns: var(--time-col) repeat(7, minmax(var(--col-min),1fr));
+  min-width: calc(var(--time-col) + 7 * var(--col-min));
+}
+.day-col {
+  position: relative;
+  pointer-events: none;   /* children opt-in */
+  border-right: none;
+}
+.day-col:last-child { border-right: none; }
+
+/* ── PLACED EVENT BLOCK ── */
+.ev-block {
+  position: absolute;
+  left: 2px; right: 2px;
+  border-radius: 6px;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: all;
+  cursor: grab;
+  user-select: none;
+  transition: box-shadow .15s, opacity .15s;
+  z-index: 5;
+  min-height: calc(var(--slot-h) - 2px);
+}
+.ev-block:hover { box-shadow: 0 4px 16px rgba(0,0,0,.5); z-index: 10; }
+.ev-block.dragging-ev { opacity:.4; cursor:grabbing; }
+.ev-block.resizing { cursor:ns-resize !important; opacity:.85; }
+
+.ev-inner {
+  flex:1; padding:3px 6px; display:flex; align-items:flex-start;
+  gap:4px; overflow:hidden; min-height:0;
+}
+.ev-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.ev-content { display:flex; flex-direction:column; flex:1; overflow:hidden; min-width:0; }
+.ev-label { font-size:10px; font-weight:500; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; line-height:1.3; }
+.ev-time  { font-size:9px; opacity:.65; line-height:1.2; white-space:nowrap; }
+.ev-del   { font-size:13px; opacity:0; line-height:1; cursor:pointer; flex-shrink:0;
+  padding:0 2px; transition:opacity .12s; align-self:flex-start; }
+.ev-block:hover .ev-del { opacity:.6; }
+.ev-del:hover { opacity:1 !important; }
+
+/* resize handle */
+.ev-resize {
+  height: 8px;
+  flex-shrink: 0;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.ev-block:hover .ev-resize { opacity: 1; }
+.ev-resize-bar {
+  width: 28px; height: 3px; border-radius: 2px;
+  background: currentColor; opacity: .35;
+}
+.ev-block.resizing .ev-resize { opacity:1; }
+
+/* drag ghost */
+#drag-ghost {
+  position:fixed; pointer-events:none; z-index:9999; display:none;
+  padding:5px 10px; border-radius:var(--radius-sm); font-size:11px;
+  font-family:'DM Mono',monospace; max-width:160px; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; border:1px solid;
+  box-shadow:0 8px 28px rgba(0,0,0,.6); opacity:.9; transform:rotate(2.5deg) scale(1.04);
+}
+
+/* drop preview ghost in grid */
+.drop-preview {
+  position:absolute; left:2px; right:2px; border-radius:6px;
+  border:2px dashed var(--accent); background:var(--accent-glow);
+  pointer-events:none; z-index:4; opacity:.8;
+}
+
+/* resize overlay (blocks pointer events during resize) */
+#resize-overlay {
+  display:none; position:fixed; inset:0; z-index:8888; cursor:ns-resize;
+}
+
+/* ── MOBILE ── */
+@media (max-width:700px) {
+  #app { flex-direction:column; }
+  #sidebar { position:fixed; top:0; left:0; right:0; z-index:100;
+    width:100%; max-height:0; overflow:hidden; border-right:none;
+    border-bottom:1px solid var(--border); transition:max-height .3s ease; }
+  #sidebar.mob-open { max-height:90dvh; overflow-y:auto; }
+  #mob-menu-btn { display:block; }
+  #week-banner { padding:0 10px; height:46px; }
+  #week-banner-label { font-size:11.5px; }
+  :root { --col-min:60px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══ SIDEBAR ══ -->
+<aside id="sidebar">
+  <div class="logo">Week<span>.</span></div>
+  <div style="height:4px"></div>
+
+  <div class="sb-section">
+    <div class="sb-divider"></div>
+    <div class="section-title">Calendar</div>
+    <div class="cal-nav">
+      <button class="cal-arrow" id="cal-prev">&#8249;</button>
+      <span class="cal-month-label" id="cal-month-label"></span>
+      <button class="cal-arrow" id="cal-next">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <button id="today-btn">Jump to today</button>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-divider"></div>
+    <div class="section-title">Selected Week</div>
+    <div id="sb-week-label">—<span id="sb-this-week-badge">This Week</span></div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-divider"></div>
+    <div class="section-title">New Task</div>
+    <input id="task-input" type="text" placeholder="Task name…" maxlength="52" autocomplete="off">
+    <div class="color-swatches" id="color-swatches"></div>
+    <button id="add-btn">+ Add Task</button>
+  </div>
+
+  <div class="sb-section" style="flex:0 0 auto;">
+    <div class="sb-divider"></div>
+  </div>
+  <div id="task-list-wrap">
+    <div class="section-title" style="padding:0 16px;">Tasks</div>
+    <div id="task-list"></div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main id="main">
+  <div id="week-banner">
+    <button id="mob-menu-btn" aria-label="Toggle sidebar">&#9776;</button>
+    <button class="banner-arrow" id="banner-prev">&#8592;</button>
+    <span id="week-banner-label"></span>
+    <span id="current-week-pill">This Week</span>
+    <button class="banner-arrow" id="banner-next">&#8594;</button>
+  </div>
+
+  <div id="grid-outer">
+    <div id="grid-header-wrap">
+      <div id="grid-header"><div class="header-cell"></div></div>
+    </div>
+    <div id="grid-scroll">
+      <!-- bg grid rows -->
+      <div id="grid-bg"></div>
+      <!-- event blocks overlay -->
+      <div id="event-layer">
+        <div></div><!-- time column spacer -->
+        <!-- 7 day columns injected by JS -->
+      </div>
+    </div>
+  </div>
+</main>
+
+</div><!-- #app -->
+
+<!-- EDIT MODAL -->
+<div id="edit-modal-backdrop">
+  <div id="edit-modal">
+    <h3>Edit Task</h3>
+    <input id="edit-label-input" type="text" maxlength="52" autocomplete="off">
+    <div class="edit-color-swatches" id="edit-color-swatches"></div>
+    <div class="edit-modal-btns">
+      <button class="modal-btn danger" id="modal-delete-btn">Delete</button>
+      <button class="modal-btn" id="modal-cancel-btn">Cancel</button>
+      <button class="modal-btn primary" id="modal-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="drag-ghost"></div>
+<div id="resize-overlay"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ═══════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════ */
+const DAYS      = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DOWS      = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+const DAY_KEYS  = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+const SH=6, SM=30, EH=23, EM=0, STEP=15;
+const SLOT_H_PX = 24;   // must match CSS --slot-h
+
+const CATS = [
+  {name:'blue',   bg:'var(--c-blue-bg)',   brd:'var(--c-blue-brd)',   txt:'var(--c-blue-txt)',   dot:'var(--c-blue-dot)'  },
+  {name:'green',  bg:'var(--c-green-bg)',  brd:'var(--c-green-brd)',  txt:'var(--c-green-txt)',  dot:'var(--c-green-dot)' },
+  {name:'yellow', bg:'var(--c-yellow-bg)', brd:'var(--c-yellow-brd)', txt:'var(--c-yellow-txt)', dot:'var(--c-yellow-dot)'},
+  {name:'red',    bg:'var(--c-red-bg)',    brd:'var(--c-red-brd)',    txt:'var(--c-red-txt)',    dot:'var(--c-red-dot)'   },
+  {name:'purple', bg:'var(--c-purple-bg)', brd:'var(--c-purple-brd)', txt:'var(--c-purple-txt)', dot:'var(--c-purple-dot)'},
+  {name:'gray',   bg:'var(--c-gray-bg)',   brd:'var(--c-gray-brd)',   txt:'var(--c-gray-txt)',   dot:'var(--c-gray-dot)'  },
+];
+const SWATCH_DOTS = ['#3b82f6','#22c55e','#eab308','#ef4444','#a855f7','#9ca3af'];
+
+/* ═══════════════════════════════
+   TIME UTILS
+   ═══════════════════════════════ */
+// Total minutes since midnight for start of grid
+const GRID_START_MIN = SH * 60 + SM;   // 390
+const GRID_END_MIN   = EH * 60 + EM;   // 1380
+
+function buildSlotTimes() {
+  const out = []; let h = SH, m = SM;
+  while (h < EH || (h === EH && m <= EM)) {
+    const lbl = m === 0 ? `${String(h).padStart(2,'0')}:00`
+              : m === 30 ? `${String(h).padStart(2,'0')}:30` : '';
+    out.push({ h, m, lbl, totalMin: h*60+m });
+    m += STEP; if (m >= 60) { m -= 60; h++; }
+  }
+  return out;
+}
+const SLOT_TIMES = buildSlotTimes();
+const TOTAL_SLOTS = SLOT_TIMES.length;
+
+/** "09:30" → minutes since midnight */
+function timeToMin(str) {
+  const [h,m] = str.split(':').map(Number);
+  return h*60+m;
+}
+/** minutes since midnight → "09:30" */
+function minToTime(mins) {
+  const h = Math.floor(mins/60), m = mins%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+/** minutes since midnight → pixel top offset in grid */
+function minToPx(mins) {
+  return (mins - GRID_START_MIN) / STEP * SLOT_H_PX;
+}
+/** pixel offset → snapped minutes since midnight */
+function pxToMin(px) {
+  return Math.round(px / SLOT_H_PX) * STEP + GRID_START_MIN;
+}
+/** duration in minutes → pixel height */
+function durToPx(dur) { return dur / STEP * SLOT_H_PX; }
+
+/* ═══════════════════════════════
+   DATE UTILS
+   ═══════════════════════════════ */
+const mid = d => { const x=new Date(d); x.setHours(0,0,0,0); return x; };
+function getMonday(d) {
+  const x=mid(d), dw=x.getDay();
+  x.setDate(x.getDate()+(dw===0?-6:1-dw)); return x;
+}
+function weekKey(mon) {
+  const d=mid(mon);
+  const thu=new Date(d); thu.setDate(d.getDate()+3-(d.getDay()+6)%7);
+  const w1=new Date(thu.getFullYear(),0,4);
+  const wn=1+Math.round(((thu-w1)/864e5-3+(w1.getDay()+6)%7)/7);
+  let y=mon.getFullYear();
+  const j4=new Date(y,0,4), d28=new Date(y,11,28);
+  if(mon<j4&&wn>50)y--; if(mon>d28&&wn<5)y++;
+  return `${y}-W${String(wn).padStart(2,'0')}`;
+}
+function monFromKey(key) {
+  const [ys,ws]=key.split('-W'); const y=+ys,w=+ws;
+  const j4=new Date(y,0,4);
+  const w1=new Date(j4); w1.setDate(j4.getDate()-(j4.getDay()+6)%7);
+  const mon=new Date(w1); mon.setDate(w1.getDate()+(w-1)*7);
+  return mid(mon);
+}
+function fmtS(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+/* ═══════════════════════════════
+   STORAGE
+   ═══════════════════════════════ */
+/*
+  plannerData[weekKey] = [ {id, taskId, day:"monday", start:"09:00", duration:60}, ... ]
+  tasks = [{id, label, catIdx}]
+*/
+function load() {
+  let pd={}, tasks=[];
+  try { pd    = JSON.parse(localStorage.getItem('wk_pd2')   || '{}'); } catch(e){}
+  try { tasks = JSON.parse(localStorage.getItem('wk_tasks') || '[]'); } catch(e){}
+
+  // Migrate from old slot-based wk_plannerData
+  const oldPd = localStorage.getItem('wk_plannerData');
+  if (oldPd && !pd.__migrated__) {
+    try {
+      const op = JSON.parse(oldPd);
+      Object.keys(op).forEach(wk => {
+        if (wk === '__migrated__') return;
+        const weekData = op[wk];
+        if (!Array.isArray(weekData) && typeof weekData === 'object') {
+          // old format: {"0_4": taskId, ...}
+          pd[wk] = pd[wk] || [];
+          Object.entries(weekData).forEach(([sk, taskId]) => {
+            const [diStr, siStr] = sk.split('_');
+            const di = +diStr, si = +siStr;
+            if (si >= 0 && si < SLOT_TIMES.length) {
+              const st = SLOT_TIMES[si];
+              pd[wk].push({
+                id: uid(),
+                taskId,
+                day: DAY_KEYS[di],
+                start: `${String(st.h).padStart(2,'0')}:${String(st.m).padStart(2,'0')}`,
+                duration: 30
+              });
+            }
+          });
+        }
+      });
+      pd.__migrated__ = true;
+      localStorage.setItem('wk_pd2', JSON.stringify(pd));
+    } catch(e){}
+  }
+
+  // Migrate old colorIdx → catIdx in tasks
+  tasks = tasks.map(t => {
+    if (t.catIdx === undefined) t.catIdx = Math.min(t.colorIdx||0, 5);
+    return t;
+  });
+
+  return { pd, tasks };
+}
+
+function saveAll() {
+  localStorage.setItem('wk_pd2',    JSON.stringify(S.pd));
+  localStorage.setItem('wk_tasks',  JSON.stringify(S.tasks));
+  localStorage.setItem('wk_selWk',  S.week);
+}
+
+/* ═══════════════════════════════
+   STATE
+   ═══════════════════════════════ */
+const { pd, tasks } = load();
+const todayMon = getMonday(new Date());
+const todayWK  = weekKey(todayMon);
+const savedWK  = localStorage.getItem('wk_selWk') ||
+                 localStorage.getItem('wk_selectedWeek') || todayWK;
+const initMon  = monFromKey(savedWK);
+
+const S = {
+  pd, tasks,
+  week:      savedWK,
+  calY:      initMon.getFullYear(),
+  calM:      initMon.getMonth(),
+  catIdx:    0,
+  editId:    null,
+  editCatIdx:0,
+};
+
+function curMon()    { return monFromKey(S.week); }
+function curEvents() {
+  if (!Array.isArray(S.pd[S.week])) S.pd[S.week] = [];
+  return S.pd[S.week];
+}
+function curTask(taskId) { return S.tasks.find(t => t.id === taskId); }
+
+/* ── Overlap check ──
+   Returns true if a new event (day, startMin, duration) would collide
+   with any existing event, optionally ignoring one event id. */
+function hasOverlap(day, startMin, duration, ignoreEvId=null) {
+  const endMin = startMin + duration;
+  return curEvents().some(ev => {
+    if (ev.id === ignoreEvId) return false;
+    if (ev.day !== day) return false;
+    const evStart = timeToMin(ev.start);
+    const evEnd   = evStart + ev.duration;
+    return startMin < evEnd && endMin > evStart;
+  });
+}
+
+/* ═══════════════════════════════
+   DRAG STATE
+   ═══════════════════════════════ */
+let dragTaskId  = null; // task being dragged from sidebar
+let dragEvId    = null; // placed event being moved
+let dragSrc     = null; // 'sidebar'|'event'
+
+// drop preview ghost
+let dropPreviewEl = null;
+let dropPreviewDay= null;
+
+/* ═══════════════════════════════
+   RENDER: MINI CALENDAR
+   ═══════════════════════════════ */
+function renderCal() {
+  const {calY:y, calM:mo} = S;
+  document.getElementById('cal-month-label').textContent =
+    new Date(y,mo,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const selMon=curMon(), selSun=new Date(selMon); selSun.setDate(selMon.getDate()+6); mid(selSun);
+  const today=mid(new Date());
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML='';
+  DOWS.forEach(d=>{const e=document.createElement('div');e.className='cal-dow';e.textContent=d;grid.appendChild(e);});
+  const firstDow=new Date(y,mo,1).getDay();
+  const dim=new Date(y,mo+1,0).getDate();
+  for(let i=0;i<firstDow;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+  for(let day=1;day<=dim;day++){
+    const dt=mid(new Date(y,mo,day));
+    const inSel=dt>=selMon&&dt<=selSun;
+    const isMon=dt.getTime()===selMon.getTime();
+    const isSun=dt.getTime()===selSun.getTime();
+    const isToday=dt.getTime()===today.getTime();
+    let cls='cal-day in-month';
+    if(inSel)cls+=' in-sel-week';
+    if(isMon)cls+=' week-start';
+    if(isSun)cls+=' week-end';
+    if(isToday)cls+=' today-day';
+    const e=document.createElement('div');
+    e.className=cls; e.textContent=day;
+    e.addEventListener('click',()=>pickWeek(dt));
+    grid.appendChild(e);
+  }
+}
+function pickWeek(date){
+  const mon=getMonday(date);
+  S.week=weekKey(mon); S.calY=mon.getFullYear(); S.calM=mon.getMonth();
+  saveAll(); renderCal(); renderSbWeek(); renderBanner(); renderHeader(); renderGrid();
+  document.getElementById('sidebar').classList.remove('mob-open');
+}
+document.getElementById('cal-prev').addEventListener('click',()=>{S.calM--;if(S.calM<0){S.calM=11;S.calY--;}renderCal();});
+document.getElementById('cal-next').addEventListener('click',()=>{S.calM++;if(S.calM>11){S.calM=0;S.calY++;}renderCal();});
+document.getElementById('today-btn').addEventListener('click',()=>pickWeek(new Date()));
+
+/* ═══════════════════════════════
+   RENDER: SIDEBAR WEEK LABEL
+   ═══════════════════════════════ */
+function renderSbWeek(){
+  const mon=curMon(), sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const lbl=document.getElementById('sb-week-label');
+  lbl.childNodes[0].textContent=`${fmtS(mon)} – ${fmtS(sun)}, ${sun.getFullYear()}`;
+  document.getElementById('sb-this-week-badge').classList.toggle('visible',S.week===todayWK);
+}
+
+/* ═══════════════════════════════
+   RENDER: MAIN BANNER
+   ═══════════════════════════════ */
+function renderBanner(){
+  const mon=curMon(), sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  document.getElementById('week-banner-label').textContent=`${fmtS(mon)} – ${fmtS(sun)}, ${sun.getFullYear()}`;
+  document.getElementById('current-week-pill').classList.toggle('visible',S.week===todayWK);
+}
+function shiftWeek(d){
+  const mon=curMon(); mon.setDate(mon.getDate()+d*7);
+  S.week=weekKey(mon); S.calY=mon.getFullYear(); S.calM=mon.getMonth();
+  saveAll(); renderCal(); renderSbWeek(); renderBanner(); renderHeader(); renderGrid();
+}
+document.getElementById('banner-prev').addEventListener('click',()=>shiftWeek(-1));
+document.getElementById('banner-next').addEventListener('click',()=>shiftWeek(+1));
+
+/* ═══════════════════════════════
+   RENDER: GRID HEADER
+   ═══════════════════════════════ */
+function renderHeader(){
+  const hdr=document.getElementById('grid-header');
+  while(hdr.children.length>1) hdr.removeChild(hdr.lastChild);
+  const mon=curMon(), today=mid(new Date());
+  DAYS.forEach((d,i)=>{
+    const dt=new Date(mon); dt.setDate(mon.getDate()+i); mid(dt);
+    const cell=document.createElement('div');
+    cell.className='header-cell'+(dt.getTime()===today.getTime()?' today':'');
+    cell.innerHTML=`<span style="font-size:9px;letter-spacing:.07em;text-transform:uppercase;">${d}</span>
+      <span class="day-num">${dt.getDate()}</span>`;
+    hdr.appendChild(cell);
+  });
+}
+
+/* ═══════════════════════════════
+   RENDER: GRID (background + events)
+   ═══════════════════════════════ */
+const dayCols = []; // references to the 7 day column els in event-layer
+
+function renderGrid() {
+  renderGridBg();
+  renderEvents();
+}
+
+function renderGridBg() {
+  const bg = document.getElementById('grid-bg');
+  bg.innerHTML = '';
+
+  SLOT_TIMES.forEach((t, si) => {
+    // time label
+    const lbl = document.createElement('div');
+    lbl.className = 'time-label' + (t.m === 0 ? ' hour' : '');
+    lbl.textContent = t.lbl;
+    bg.appendChild(lbl);
+
+    // 7 slot cells
+    DAYS.forEach((_, di) => {
+      const cell = document.createElement('div');
+      cell.className = 'slot-cell' + (t.m === 0 ? ' hour-top' : '');
+      cell._di = di; cell._si = si;
+
+      // drag-over for sidebar/event drops
+      cell.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        updateDropPreview(di, t.totalMin);
+      });
+      cell.addEventListener('dragleave', e => {
+        // only clear if leaving the grid entirely
+        if (!e.relatedTarget || !e.relatedTarget.closest('#grid-scroll')) clearDropPreview();
+      });
+      cell.addEventListener('drop', e => {
+        e.preventDefault();
+        clearDropPreview();
+        handleGridDrop(di, t.totalMin);
+      });
+      bg.appendChild(cell);
+    });
+  });
+}
+
+function renderEvents() {
+  // Rebuild event-layer day columns
+  const layer = document.getElementById('event-layer');
+  // Remove old day cols
+  dayCols.forEach(c => c.remove());
+  dayCols.length = 0;
+
+  DAYS.forEach((_, di) => {
+    const col = document.createElement('div');
+    col.className = 'day-col';
+    col.dataset.di = di;
+    layer.appendChild(col);
+    dayCols.push(col);
+  });
+
+  // Place events
+  curEvents().forEach(ev => {
+    const di = DAY_KEYS.indexOf(ev.day);
+    if (di < 0) return;
+    const task = curTask(ev.taskId);
+    if (!task) return;
+    placeEventBlock(ev, task, di);
+  });
+}
+
+function placeEventBlock(ev, task, di) {
+  const c    = CATS[task.catIdx || 0];
+  const startMin = timeToMin(ev.start);
+  const top  = minToPx(startMin);
+  const h    = durToPx(ev.duration);
+  const endMin = startMin + ev.duration;
+  const endLabel = minToTime(endMin);
+
+  const block = document.createElement('div');
+  block.className = 'ev-block';
+  block.dataset.evId = ev.id;
+  block.style.cssText = `top:${top}px;height:${h}px;background:${c.bg};border-color:${c.brd};color:${c.txt};`;
+
+  const showTime = h >= SLOT_H_PX * 2; // only show time label if tall enough
+  block.innerHTML = `
+    <div class="ev-inner">
+      <span class="ev-dot" style="background:${c.dot}"></span>
+      <div class="ev-content">
+        <span class="ev-label">${task.label}</span>
+        ${showTime ? `<span class="ev-time">${ev.start} – ${endLabel}</span>` : ''}
+      </div>
+      <span class="ev-del" title="Remove">&#215;</span>
+    </div>
+    <div class="ev-resize"><div class="ev-resize-bar"></div></div>`;
+
+  // Delete
+  block.querySelector('.ev-del').addEventListener('click', e => {
+    e.stopPropagation();
+    removeEvent(ev.id);
+  });
+
+  // Drag event block (move)
+  block.addEventListener('mousedown', e => {
+    if (e.target.closest('.ev-resize') || e.target.classList.contains('ev-del')) return;
+    e.preventDefault();
+    startEventDrag(e, ev, di, block, c);
+  });
+  block.addEventListener('touchstart', e => {
+    if (e.target.closest('.ev-resize') || e.target.classList.contains('ev-del')) return;
+    e.preventDefault();
+    startEventTouchDrag(e, ev, di, block, c);
+  }, {passive:false});
+
+  // Resize handle
+  const resizeHandle = block.querySelector('.ev-resize');
+  resizeHandle.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); startResize(e, ev, block); });
+  resizeHandle.addEventListener('touchstart', e => { e.preventDefault(); e.stopPropagation(); startTouchResize(e, ev, block); }, {passive:false});
+
+  dayCols[di].appendChild(block);
+}
+
+/* ═══════════════════════════════
+   DROP PREVIEW
+   ═══════════════════════════════ */
+function updateDropPreview(di, startMin) {
+  const snapped = Math.max(GRID_START_MIN, Math.min(GRID_END_MIN - 15, startMin));
+  const col = dayCols[di];
+  if (!col) return;
+
+  if (!dropPreviewEl || dropPreviewDay !== di) {
+    clearDropPreview();
+    dropPreviewEl = document.createElement('div');
+    dropPreviewEl.className = 'drop-preview';
+    col.appendChild(dropPreviewEl);
+    dropPreviewDay = di;
+  }
+  const top = minToPx(snapped);
+  dropPreviewEl.style.top    = `${top}px`;
+  dropPreviewEl.style.height = `${durToPx(30)}px`; // default 30min preview
+}
+function clearDropPreview() {
+  if (dropPreviewEl) { dropPreviewEl.remove(); dropPreviewEl = null; dropPreviewDay = null; }
+}
+
+/* ═══════════════════════════════
+   GRID DROP (from sidebar or moved event)
+   ═══════════════════════════════ */
+function handleGridDrop(di, rawStartMin) {
+  const startMin = Math.max(GRID_START_MIN, Math.min(GRID_END_MIN - 15, rawStartMin));
+  const day = DAY_KEYS[di];
+
+  if (dragTaskId) {
+    // New placement from sidebar
+    const duration = 30;
+    if (hasOverlap(day, startMin, duration)) return;
+    curEvents().push({ id: uid(), taskId: dragTaskId, day, start: minToTime(startMin), duration });
+    saveAll(); renderEvents();
+    dragTaskId = null;
+  } else if (dragEvId) {
+    // Moving existing event
+    const ev = curEvents().find(e => e.id === dragEvId);
+    if (!ev) return;
+    if (startMin + ev.duration > GRID_END_MIN + STEP) return; // out of bounds
+    if (hasOverlap(day, startMin, ev.duration, dragEvId)) { dragEvId=null; renderEvents(); return; }
+    ev.day   = day;
+    ev.start = minToTime(startMin);
+    saveAll(); renderEvents();
+    dragEvId = null;
+  }
+}
+
+/* ═══════════════════════════════
+   REMOVE EVENT
+   ═══════════════════════════════ */
+function removeEvent(evId) {
+  S.pd[S.week] = curEvents().filter(e => e.id !== evId);
+  saveAll(); renderEvents();
+}
+
+/* ═══════════════════════════════
+   SIDEBAR → GRID DRAG (desktop)
+   ═══════════════════════════════ */
+const ghost = document.getElementById('drag-ghost');
+document.addEventListener('dragover', e => {
+  ghost.style.left = (e.clientX + 14) + 'px';
+  ghost.style.top  = (e.clientY + 8)  + 'px';
+});
+function showGhost(label, c) {
+  ghost.textContent = label;
+  ghost.style.cssText = `display:block;left:0;top:0;background:${c.bg};border-color:${c.brd};color:${c.txt};`;
+}
+function hideGhost() { ghost.style.display = 'none'; }
+
+/* ═══════════════════════════════
+   EVENT BLOCK DRAG (mouse — move placed event)
+   ═══════════════════════════════ */
+function startEventDrag(e, ev, di, block, c) {
+  dragEvId = ev.id;
+  dragSrc  = 'event';
+  block.classList.add('dragging-ev');
+
+  // measure click offset within block for precise placement
+  const blockRect = block.getBoundingClientRect();
+  const offsetY   = e.clientY - blockRect.top;
+
+  function onMove(me) {
+    ghost.style.left = (me.clientX + 14) + 'px';
+    ghost.style.top  = (me.clientY + 8) + 'px';
+
+    const task = curTask(ev.taskId);
+    if (task) showGhost(task.label, c);
+
+    // Find cell under cursor (accounting for offset)
+    const targetY = me.clientY - offsetY + SLOT_H_PX / 2;
+    const targetX = me.clientX;
+    const underlying = document.elementFromPoint(targetX, targetY);
+    const cell = underlying && (underlying.classList.contains('slot-cell')
+      ? underlying
+      : underlying.closest('.slot-cell'));
+    if (cell && cell._di !== undefined && cell._si !== undefined) {
+      const t = SLOT_TIMES[cell._si];
+      updateDropPreview(cell._di, t.totalMin);
+    }
+  }
+
+  function onUp(ue) {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    block.classList.remove('dragging-ev');
+    hideGhost(); clearDropPreview();
+
+    const underlying = document.elementFromPoint(ue.clientX, ue.clientY - offsetY + SLOT_H_PX/2);
+    const cell = underlying && (underlying.classList.contains('slot-cell')
+      ? underlying : underlying.closest('.slot-cell'));
+    if (cell && cell._di !== undefined && cell._si !== undefined) {
+      handleGridDrop(cell._di, SLOT_TIMES[cell._si].totalMin);
+    } else {
+      dragEvId = null; renderEvents();
+    }
+  }
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+/* ═══════════════════════════════
+   EVENT BLOCK DRAG (touch — move placed event)
+   ═══════════════════════════════ */
+function startEventTouchDrag(e, ev, di, block, c) {
+  dragEvId = ev.id; dragSrc = 'event';
+  block.classList.add('dragging-ev');
+
+  const task = curTask(ev.taskId);
+  const tg = document.createElement('div');
+  tg.style.cssText = `position:fixed;z-index:9999;pointer-events:none;
+    opacity:.85;transform:rotate(2.5deg) scale(1.04);
+    background:${c.bg};border:1px solid ${c.brd};color:${c.txt};
+    padding:5px 10px;border-radius:6px;font-size:11px;
+    font-family:'DM Mono',monospace;white-space:nowrap;
+    box-shadow:0 8px 28px rgba(0,0,0,.6);`;
+  tg.textContent = task ? task.label : '';
+  document.body.appendChild(tg);
+
+  function mv(te) {
+    te.preventDefault();
+    const t = te.touches[0];
+    tg.style.left = (t.clientX+14) + 'px';
+    tg.style.top  = (t.clientY+8)  + 'px';
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const cell = el && (el.classList.contains('slot-cell') ? el : el.closest('.slot-cell'));
+    if (cell) updateDropPreview(cell._di, SLOT_TIMES[cell._si].totalMin);
+  }
+  function up(te) {
+    document.removeEventListener('touchmove', mv);
+    document.removeEventListener('touchend', up);
+    tg.remove(); block.classList.remove('dragging-ev'); clearDropPreview();
+    const t = te.changedTouches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const cell = el && (el.classList.contains('slot-cell') ? el : el.closest('.slot-cell'));
+    if (cell) handleGridDrop(cell._di, SLOT_TIMES[cell._si].totalMin);
+    else { dragEvId=null; renderEvents(); }
+  }
+  document.addEventListener('touchmove', mv, {passive:false});
+  document.addEventListener('touchend', up);
+}
+
+/* ═══════════════════════════════
+   RESIZE (mouse)
+   ═══════════════════════════════ */
+const resizeOverlay = document.getElementById('resize-overlay');
+
+function startResize(e, ev, block) {
+  resizeOverlay.style.display = 'block';
+  block.classList.add('resizing');
+
+  const startY   = e.clientY;
+  const origDur  = ev.duration;
+  const startMin = timeToMin(ev.start);
+
+  function onMove(me) {
+    const dy       = me.clientY - startY;
+    const addMin   = Math.round(dy / SLOT_H_PX) * STEP;
+    let newDur     = Math.max(STEP, origDur + addMin);
+    const endMin   = startMin + newDur;
+
+    // Clamp to grid end
+    if (endMin > GRID_END_MIN + STEP) newDur = GRID_END_MIN + STEP - startMin;
+
+    // Snap & check overlap
+    const snapDur = Math.max(STEP, Math.round(newDur / STEP) * STEP);
+    const wouldOverlap = hasOverlap(ev.day, startMin, snapDur, ev.id);
+
+    // Live-preview height
+    block.style.height = durToPx(wouldOverlap ? ev.duration : snapDur) + 'px';
+
+    // Update time label live
+    const inner = block.querySelector('.ev-time');
+    if (inner) inner.textContent = `${ev.start} – ${minToTime(startMin + (wouldOverlap ? ev.duration : snapDur))}`;
+  }
+
+  function onUp(ue) {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    resizeOverlay.style.display = 'none';
+    block.classList.remove('resizing');
+
+    const dy     = ue.clientY - startY;
+    const addMin = Math.round(dy / SLOT_H_PX) * STEP;
+    let newDur   = Math.max(STEP, origDur + addMin);
+    const endMin = startMin + newDur;
+    if (endMin > GRID_END_MIN + STEP) newDur = GRID_END_MIN + STEP - startMin;
+    const snapDur = Math.max(STEP, Math.round(newDur / STEP) * STEP);
+
+    if (!hasOverlap(ev.day, startMin, snapDur, ev.id)) {
+      ev.duration = snapDur;
+      saveAll();
+    }
+    renderEvents();
+  }
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+/* ═══════════════════════════════
+   RESIZE (touch)
+   ═══════════════════════════════ */
+function startTouchResize(e, ev, block) {
+  block.classList.add('resizing');
+  const startY  = e.touches[0].clientY;
+  const origDur = ev.duration;
+  const startMin = timeToMin(ev.start);
+
+  function mv(te) {
+    te.preventDefault();
+    const dy     = te.touches[0].clientY - startY;
+    const addMin = Math.round(dy / SLOT_H_PX) * STEP;
+    let newDur   = Math.max(STEP, origDur + addMin);
+    const endMin = startMin + newDur;
+    if (endMin > GRID_END_MIN + STEP) newDur = GRID_END_MIN + STEP - startMin;
+    const snapDur = Math.max(STEP, Math.round(newDur / STEP) * STEP);
+    const wouldOverlap = hasOverlap(ev.day, startMin, snapDur, ev.id);
+    block.style.height = durToPx(wouldOverlap ? origDur : snapDur) + 'px';
+    const inner = block.querySelector('.ev-time');
+    if (inner) inner.textContent = `${ev.start} – ${minToTime(startMin + (wouldOverlap ? origDur : snapDur))}`;
+  }
+  function up(te) {
+    document.removeEventListener('touchmove', mv);
+    document.removeEventListener('touchend', up);
+    block.classList.remove('resizing');
+    const dy     = te.changedTouches[0].clientY - startY;
+    const addMin = Math.round(dy / SLOT_H_PX) * STEP;
+    let newDur   = Math.max(STEP, origDur + addMin);
+    const endMin = startMin + newDur;
+    if (endMin > GRID_END_MIN + STEP) newDur = GRID_END_MIN + STEP - startMin;
+    const snapDur = Math.max(STEP, Math.round(newDur / STEP) * STEP);
+    if (!hasOverlap(ev.day, startMin, snapDur, ev.id)) {
+      ev.duration = snapDur;
+      saveAll();
+    }
+    renderEvents();
+  }
+  document.addEventListener('touchmove', mv, {passive:false});
+  document.addEventListener('touchend', up);
+}
+
+/* ═══════════════════════════════
+   SIDEBAR → GRID DRAG (touch)
+   ═══════════════════════════════ */
+let touchSidebarTaskId = null, touchGhostEl = null;
+
+function startSidebarTouchDrag(e, taskId, c) {
+  e.preventDefault();
+  touchSidebarTaskId = taskId; dragTaskId = taskId;
+  const task = curTask(taskId);
+
+  touchGhostEl = document.createElement('div');
+  touchGhostEl.style.cssText = `position:fixed;z-index:9999;pointer-events:none;
+    opacity:.85;transform:rotate(3deg) scale(1.05);
+    background:${c.bg};border:1px solid ${c.brd};color:${c.txt};
+    padding:7px 10px;border-radius:6px;font-size:11px;
+    font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    max-width:160px;box-shadow:0 8px 28px rgba(0,0,0,.6);`;
+  touchGhostEl.textContent = task ? task.label : '';
+  document.body.appendChild(touchGhostEl);
+  moveTG(e.touches[0]);
+}
+
+document.addEventListener('touchmove', e => {
+  if (!touchSidebarTaskId) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  moveTG(t);
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const cell = el && (el.classList.contains('slot-cell') ? el : el.closest('.slot-cell'));
+  if (cell && cell._di !== undefined) updateDropPreview(cell._di, SLOT_TIMES[cell._si].totalMin);
+  else clearDropPreview();
+}, {passive:false});
+
+document.addEventListener('touchend', e => {
+  if (!touchSidebarTaskId) return;
+  if (touchGhostEl) { touchGhostEl.remove(); touchGhostEl = null; }
+  clearDropPreview();
+  const t = e.changedTouches[0];
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const cell = el && (el.classList.contains('slot-cell') ? el : el.closest('.slot-cell'));
+  if (cell && cell._di !== undefined) {
+    handleGridDrop(cell._di, SLOT_TIMES[cell._si].totalMin);
+  } else { dragTaskId = null; }
+  touchSidebarTaskId = null;
+});
+
+function moveTG(t) {
+  if (!touchGhostEl) return;
+  touchGhostEl.style.left = (t.clientX + 14) + 'px';
+  touchGhostEl.style.top  = (t.clientY - 10) + 'px';
+}
+
+/* ═══════════════════════════════
+   RENDER: TASK LIST
+   ═══════════════════════════════ */
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  S.tasks.forEach(task => {
+    const c = CATS[task.catIdx || 0];
+    const tag = document.createElement('div');
+    tag.className = 'task-tag';
+    tag.style.cssText = `background:${c.bg};border-color:${c.brd};color:${c.txt};`;
+    tag.draggable = true;
+    tag.innerHTML = `<span class="tag-dot" style="background:${c.dot}"></span>
+      <span class="tag-label">${task.label}</span>
+      <span class="tag-actions">
+        <button class="tag-btn edit-btn" title="Edit">&#9998;</button>
+        <button class="tag-btn del-btn"  title="Delete">&#215;</button>
+      </span>`;
+
+    tag.querySelector('.del-btn').addEventListener('click', e => { e.stopPropagation(); deleteTask(task.id); });
+    tag.querySelector('.edit-btn').addEventListener('click', e => { e.stopPropagation(); openEditModal(task.id); });
+
+    tag.addEventListener('dragstart', e => {
+      tag.classList.add('dragging');
+      dragTaskId = task.id; dragSrc = 'sidebar';
+      showGhost(task.label, c);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setDragImage(document.createElement('canvas'), 0, 0);
+    });
+    tag.addEventListener('dragend', () => { tag.classList.remove('dragging'); hideGhost(); clearDropPreview(); dragTaskId = null; });
+    tag.addEventListener('touchstart', e => startSidebarTouchDrag(e, task.id, c), {passive:false});
+    list.appendChild(tag);
+  });
+}
+
+function deleteTask(id) {
+  S.tasks = S.tasks.filter(t => t.id !== id);
+  // Remove all events for this task across all weeks
+  Object.keys(S.pd).forEach(wk => {
+    if (Array.isArray(S.pd[wk])) S.pd[wk] = S.pd[wk].filter(ev => ev.taskId !== id);
+  });
+  saveAll(); renderTasks(); renderEvents();
+}
+
+/* ═══════════════════════════════
+   COLOR SWATCHES
+   ═══════════════════════════════ */
+function buildSwatches(containerId, stateKey) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  SWATCH_DOTS.forEach((dot, i) => {
+    const s = document.createElement('div');
+    s.className = 'swatch' + (i === S[stateKey] ? ' selected' : '');
+    s.style.background = dot;
+    s.title = CATS[i].name;
+    s.addEventListener('click', () => {
+      S[stateKey] = i;
+      el.querySelectorAll('.swatch').forEach((x,j) => x.classList.toggle('selected', j===i));
+    });
+    el.appendChild(s);
+  });
+}
+
+/* ═══════════════════════════════
+   ADD TASK
+   ═══════════════════════════════ */
+function addTask() {
+  const inp = document.getElementById('task-input');
+  const label = inp.value.trim();
+  if (!label) { inp.focus(); return; }
+  S.tasks.push({ id: uid(), label, catIdx: S.catIdx });
+  saveAll(); inp.value = ''; renderTasks();
+}
+document.getElementById('add-btn').addEventListener('click', addTask);
+document.getElementById('task-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+/* ═══════════════════════════════
+   EDIT MODAL
+   ═══════════════════════════════ */
+const modalBackdrop = document.getElementById('edit-modal-backdrop');
+function openEditModal(id) {
+  const task = S.tasks.find(t => t.id === id);
+  if (!task) return;
+  S.editId = id; S.editCatIdx = task.catIdx || 0;
+  document.getElementById('edit-label-input').value = task.label;
+  buildSwatches('edit-color-swatches', 'editCatIdx');
+  document.getElementById('edit-color-swatches').querySelectorAll('.swatch')
+    .forEach((s,i) => s.classList.toggle('selected', i === S.editCatIdx));
+  modalBackdrop.classList.add('open');
+  document.getElementById('edit-label-input').focus();
+}
+function closeModal() { modalBackdrop.classList.remove('open'); S.editId = null; }
+document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
+document.getElementById('modal-save-btn').addEventListener('click', () => {
+  if (!S.editId) return;
+  const newLabel = document.getElementById('edit-label-input').value.trim();
+  if (!newLabel) return;
+  const task = S.tasks.find(t => t.id === S.editId);
+  if (!task) return;
+  task.label = newLabel; task.catIdx = S.editCatIdx;
+  saveAll(); renderTasks(); renderEvents(); closeModal();
+});
+document.getElementById('modal-delete-btn').addEventListener('click', () => {
+  if (!S.editId) return; deleteTask(S.editId); closeModal();
+});
+document.getElementById('edit-label-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('modal-save-btn').click();
+  if (e.key === 'Escape') closeModal();
+});
+
+/* ═══════════════════════════════
+   HEADER ↔ SCROLL SYNC
+   ═══════════════════════════════ */
+const gridScroll = document.getElementById('grid-scroll');
+const headerWrap = document.getElementById('grid-header-wrap');
+headerWrap.style.overflowX = 'hidden';
+gridScroll.addEventListener('scroll', () => {
+  headerWrap.scrollLeft = gridScroll.scrollLeft;
+}, {passive:true});
+
+/* ═══════════════════════════════
+   MOBILE SIDEBAR TOGGLE
+   ═══════════════════════════════ */
+document.getElementById('mob-menu-btn').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('mob-open');
+});
+
+/* ═══════════════════════════════
+   BOOT
+   ═══════════════════════════════ */
+buildSwatches('color-swatches', 'catIdx');
+renderCal();
+renderSbWeek();
+renderBanner();
+renderHeader();
+renderGrid();
+renderTasks();
+
+// Scroll to 08:00
+const t8 = SLOT_TIMES.findIndex(t => t.h === 8 && t.m === 0);
+if (t8 >= 0) gridScroll.scrollTop = t8 * SLOT_H_PX;
+
+})();
+</script>
+</body>
+</html>
