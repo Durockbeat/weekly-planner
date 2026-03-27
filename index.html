@@ -483,6 +483,132 @@ body {
  
 #resize-overlay { display:none; position:fixed; inset:0; z-index:8888; cursor:ns-resize; }
  
+/* ── CATEGORY STATS ── */
+#cat-stats {
+  border-top: 1px solid var(--border);
+  padding: 8px 16px 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.cat-stat-label {
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  width: 100%;
+  margin-bottom: 2px;
+}
+.cat-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.cat-stat-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.cat-stat-dur { color: var(--text); font-weight: 500; }
+ 
+/* ── GOALS PANEL ── */
+#goals-panel { padding: 0 16px; flex-shrink: 0; }
+#goals-panel .sb-divider { margin: 13px 0; }
+ 
+.goals-section { margin-bottom: 6px; }
+.goals-sec-header {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; padding: 4px 0; user-select: none;
+}
+.goals-sec-title {
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-faint); display: flex; align-items: center; gap: 5px;
+}
+.goals-sec-toggle {
+  font-size: 10px; color: var(--text-faint); transition: transform .2s;
+  line-height: 1;
+}
+.goals-section.collapsed .goals-sec-toggle { transform: rotate(-90deg); }
+.goals-sec-body { overflow: hidden; }
+.goals-section.collapsed .goals-sec-body { display: none; }
+ 
+.goals-add-row {
+  display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap;
+}
+.goals-inp {
+  flex: 1; min-width: 0; padding: 5px 8px;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: 10px; outline: none;
+  transition: border-color .15s;
+}
+.goals-inp:focus { border-color: var(--accent); }
+.goals-inp::placeholder { color: var(--text-faint); }
+.goals-add-btn {
+  padding: 5px 9px; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--text-dim); cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s; white-space: nowrap;
+}
+.goals-add-btn:hover { background: var(--border2); color: var(--text); border-color: var(--accent); }
+ 
+.goal-item {
+  display: flex; align-items: flex-start; gap: 6px; padding: 5px 7px;
+  border-radius: var(--radius-sm); background: var(--surface2);
+  border: 1px solid var(--border); margin-bottom: 4px;
+  transition: opacity .2s;
+}
+.goal-item.done { opacity: .48; }
+.goal-chk {
+  flex-shrink: 0; width: 12px; height: 12px; border-radius: 3px;
+  border: 1.5px solid var(--text-faint); cursor: pointer; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, border-color .15s; font-size: 8px;
+}
+.goal-chk.checked { background: var(--green); border-color: var(--green); }
+.goal-chk.checked::after { content: '✓'; color: #000; font-weight: 700; }
+.goal-body { flex: 1; min-width: 0; }
+.goal-title {
+  font-size: 10px; color: var(--text); line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.goal-item.done .goal-title { text-decoration: line-through; color: var(--text-faint); }
+.goal-meta {
+  font-size: 9px; color: var(--text-faint); margin-top: 1px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.goal-del {
+  background: none; border: none; cursor: pointer; color: var(--text-faint);
+  font-size: 12px; opacity: 0; padding: 0 2px; line-height: 1;
+  transition: opacity .1s; flex-shrink: 0; margin-top: 1px;
+}
+.goal-item:hover .goal-del { opacity: .55; }
+.goal-del:hover { opacity: 1 !important; color: #fca5a5; }
+ 
+/* course progress */
+.course-progress-wrap { margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+.course-progress-track {
+  flex: 1; height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden;
+}
+.course-progress-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  transition: width .3s ease;
+}
+.course-pct-inp {
+  width: 38px; padding: 2px 4px; background: var(--bg); border: 1px solid var(--border2);
+  border-radius: 4px; color: var(--text-dim); font-family: 'DM Mono', monospace;
+  font-size: 9px; outline: none; text-align: center; transition: border-color .15s;
+}
+.course-pct-inp:focus { border-color: var(--accent); }
+ 
+/* goals section count badge */
+.goals-count {
+  background: var(--surface3); color: var(--text-faint);
+  font-size: 8.5px; border-radius: 8px; padding: 1px 5px; margin-left: 3px;
+}
+ 
 /* ── UNLOCK TOAST ── */
 #unlock-toast {
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
@@ -537,6 +663,76 @@ body {
     <div class="sb-divider"></div>
     <div class="section-title">Selected Week</div>
     <div id="sb-week-label">—<span id="sb-this-week-badge">This Week</span></div>
+  </div>
+ 
+  <!-- Goals Panel -->
+  <div id="goals-panel">
+    <div class="sb-divider"></div>
+    <div class="goals-sec-header" style="padding:0 0 6px 0;cursor:default;">
+      <div class="section-title" style="margin-bottom:0">Goals</div>
+    </div>
+ 
+    <!-- Bills -->
+    <div class="goals-section" id="gs-bills">
+      <div class="goals-sec-header" data-sec="bills">
+        <span class="goals-sec-title">💳 Bills to Pay <span class="goals-count" id="gc-bills">0</span></span>
+        <span class="goals-sec-toggle">▾</span>
+      </div>
+      <div class="goals-sec-body">
+        <div class="goals-add-row">
+          <input class="goals-inp" id="bill-name-inp" placeholder="Bill name" autocomplete="off" style="flex:2">
+          <input class="goals-inp" id="bill-date-inp" type="date" style="flex:1.5;min-width:0">
+          <input class="goals-inp" id="bill-amt-inp" type="number" placeholder="$" min="0" step="0.01" style="flex:1;min-width:40px">
+          <button class="goals-add-btn" id="bill-add-btn">+</button>
+        </div>
+        <div id="bills-list"></div>
+      </div>
+    </div>
+ 
+    <!-- Books -->
+    <div class="goals-section collapsed" id="gs-books">
+      <div class="goals-sec-header" data-sec="books">
+        <span class="goals-sec-title">📚 Books to Read <span class="goals-count" id="gc-books">0</span></span>
+        <span class="goals-sec-toggle">▾</span>
+      </div>
+      <div class="goals-sec-body">
+        <div class="goals-add-row">
+          <input class="goals-inp" id="book-title-inp" placeholder="Book title" autocomplete="off">
+          <button class="goals-add-btn" id="book-add-btn">+</button>
+        </div>
+        <div id="books-list"></div>
+      </div>
+    </div>
+ 
+    <!-- Games -->
+    <div class="goals-section collapsed" id="gs-games">
+      <div class="goals-sec-header" data-sec="games">
+        <span class="goals-sec-title">🎮 Games to Play <span class="goals-count" id="gc-games">0</span></span>
+        <span class="goals-sec-toggle">▾</span>
+      </div>
+      <div class="goals-sec-body">
+        <div class="goals-add-row">
+          <input class="goals-inp" id="game-title-inp" placeholder="Game title" autocomplete="off">
+          <button class="goals-add-btn" id="game-add-btn">+</button>
+        </div>
+        <div id="games-list"></div>
+      </div>
+    </div>
+ 
+    <!-- Courses -->
+    <div class="goals-section collapsed" id="gs-courses">
+      <div class="goals-sec-header" data-sec="courses">
+        <span class="goals-sec-title">🎓 Courses <span class="goals-count" id="gc-courses">0</span></span>
+        <span class="goals-sec-toggle">▾</span>
+      </div>
+      <div class="goals-sec-body">
+        <div class="goals-add-row">
+          <input class="goals-inp" id="course-title-inp" placeholder="Course title" autocomplete="off">
+          <button class="goals-add-btn" id="course-add-btn">+</button>
+        </div>
+        <div id="courses-list"></div>
+      </div>
+    </div>
   </div>
  
   <!-- Rewards -->
@@ -607,6 +803,7 @@ body {
         <span class="score-bar-next" id="sp-next"></span>
       </div>
     </div>
+    <div id="cat-stats"><!-- filled by JS --></div>
   </div>
  
   <div id="grid-outer">
@@ -708,11 +905,19 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
  
 /* ═══════ STORAGE ═══════ */
 function load(){
-  let pd={},tasks=[],rewards=[];
+  let pd={},tasks=[],rewards=[],goalsData={bills:[],books:[],games:[],courses:[]};
   try{pd=JSON.parse(localStorage.getItem('wk_pd2')||'{}');}catch(e){}
   try{tasks=JSON.parse(localStorage.getItem('wk_tasks')||'[]');}catch(e){}
   try{rewards=JSON.parse(localStorage.getItem('wk_rewards')||'[]');}catch(e){}
- 
+  try{
+    const g=JSON.parse(localStorage.getItem('wk_goals')||'{}');
+    goalsData={
+      bills:  g.bills  ||[],
+      books:  g.books  ||[],
+      games:  g.games  ||[],
+      courses:g.courses||[],
+    };
+  }catch(e){}
   // migrate old slot-based storage
   const oldPd=localStorage.getItem('wk_plannerData');
   if(oldPd&&!pd.__migrated__){
@@ -744,17 +949,18 @@ function load(){
     if(ev.done===undefined)ev.done=false;
     if(ev.notes===undefined)ev.notes='';
   });});
-  return{pd,tasks,rewards};
+  return{pd,tasks,rewards,goalsData};
 }
 function saveAll(){
   localStorage.setItem('wk_pd2',JSON.stringify(S.pd));
   localStorage.setItem('wk_tasks',JSON.stringify(S.tasks));
   localStorage.setItem('wk_rewards',JSON.stringify(S.rewards));
+  localStorage.setItem('wk_goals',JSON.stringify(S.goals));
   localStorage.setItem('wk_selWk',S.week);
 }
  
 /* ═══════ STATE ═══════ */
-const{pd,tasks,rewards}=load();
+const{pd,tasks,rewards,goalsData}=load();
 const todayMon=getMonday(new Date());
 const todayWK=weekKey(todayMon);
 const savedWK=localStorage.getItem('wk_selWk')||localStorage.getItem('wk_selectedWeek')||todayWK;
@@ -762,6 +968,7 @@ const initMon=monFromKey(savedWK);
  
 const S={
   pd,tasks,rewards,
+  goals:goalsData,
   week:savedWK,
   calY:initMon.getFullYear(),
   calM:initMon.getMonth(),
@@ -811,6 +1018,7 @@ function renderScorePanel(){
     document.getElementById('sp-next').textContent=pts>0?'All rewards unlocked!':'';
   }
   checkRewardUnlocks(pts);
+  renderCatStats();
 }
  
 /* ═══════ REWARDS ═══════ */
@@ -1427,6 +1635,241 @@ document.getElementById('edit-label-input').addEventListener('keydown',e=>{
   if(e.key==='Escape')closeModal();
 });
  
+/* ═══════ CATEGORY STATS ═══════ */
+function renderCatStats(){
+  const panel=document.getElementById('cat-stats');
+  if(!panel)return;
+  // accumulate completed minutes per category index
+  const bycat=new Array(CATS.length).fill(0);
+  curEvents().forEach(ev=>{
+    if(!ev.done)return;
+    const task=curTask(ev.taskId);
+    if(!task)return;
+    const ci=task.catIdx||0;
+    bycat[ci]+=ev.duration;
+  });
+  const active=bycat.map((mins,ci)=>({ci,mins})).filter(x=>x.mins>0);
+  if(active.length===0){panel.innerHTML='';return;}
+ 
+  let html='<span class="cat-stat-label">Category Stats</span>';
+  active.forEach(({ci,mins})=>{
+    const dot=SWATCH_DOTS[ci];
+    const name=CATS[ci].name.charAt(0).toUpperCase()+CATS[ci].name.slice(1);
+    html+=`<span class="cat-stat-item">
+      <span class="cat-stat-dot" style="background:${dot}"></span>
+      <span>${name}</span>
+      <span class="cat-stat-dur">${fmtDur(mins)}</span>
+    </span>`;
+  });
+  panel.innerHTML=html;
+}
+ 
+/* ═══════ COLLAPSIBLE SECTION HEADERS ═══════ */
+document.querySelectorAll('.goals-sec-header[data-sec]').forEach(hdr=>{
+  hdr.addEventListener('click',()=>{
+    hdr.closest('.goals-section').classList.toggle('collapsed');
+  });
+});
+ 
+/* ═══════ GOALS SYSTEM ═══════ */
+function saveGoals(){localStorage.setItem('wk_goals',JSON.stringify(S.goals));}
+ 
+/* ── shared render helper ── */
+function renderGoalList(listId,items,buildRowFn){
+  const el=document.getElementById(listId);
+  if(!el)return;
+  el.innerHTML='';
+  items.forEach((item,idx)=>{
+    const row=buildRowFn(item,idx);
+    el.appendChild(row);
+  });
+}
+ 
+/* ── update count badges ── */
+function updateGoalCounts(){
+  document.getElementById('gc-bills').textContent=S.goals.bills.length;
+  document.getElementById('gc-books').textContent=S.goals.books.length;
+  document.getElementById('gc-games').textContent=S.goals.games.length;
+  document.getElementById('gc-courses').textContent=S.goals.courses.length;
+}
+ 
+/* ── BILLS ── */
+function renderBills(){
+  renderGoalList('bills-list',S.goals.bills,(item,idx)=>{
+    const row=document.createElement('div');
+    row.className='goal-item'+(item.completed?' done':'');
+    const dateStr=item.dueDate?`<span>Due ${item.dueDate}</span>`:'';
+    const amtStr=item.amount?`<span>$${parseFloat(item.amount).toFixed(2)}</span>`:'';
+    row.innerHTML=`
+      <span class="goal-chk${item.completed?' checked':''}" title="Mark paid"></span>
+      <div class="goal-body">
+        <div class="goal-title">${escHtml(item.name)}</div>
+        ${(dateStr||amtStr)?`<div class="goal-meta">${dateStr}${amtStr}</div>`:''}
+      </div>
+      <button class="goal-del" title="Remove">&#215;</button>`;
+    row.querySelector('.goal-chk').addEventListener('click',e=>{
+      e.stopPropagation();
+      item.completed=!item.completed;
+      row.classList.toggle('done',item.completed);
+      row.querySelector('.goal-chk').classList.toggle('checked',item.completed);
+      saveGoals();
+    });
+    row.querySelector('.goal-del').addEventListener('click',e=>{
+      e.stopPropagation();
+      S.goals.bills.splice(idx,1);
+      saveGoals();renderBills();updateGoalCounts();
+    });
+    return row;
+  });
+  updateGoalCounts();
+}
+ 
+document.getElementById('bill-add-btn').addEventListener('click',()=>{
+  const name=document.getElementById('bill-name-inp').value.trim();
+  if(!name)return;
+  const dueDate=document.getElementById('bill-date-inp').value||'';
+  const amount=document.getElementById('bill-amt-inp').value||'';
+  S.goals.bills.push({id:uid(),name,dueDate,amount,completed:false});
+  saveGoals();
+  document.getElementById('bill-name-inp').value='';
+  document.getElementById('bill-date-inp').value='';
+  document.getElementById('bill-amt-inp').value='';
+  renderBills();
+});
+document.getElementById('bill-name-inp').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('bill-add-btn').click();});
+ 
+/* ── BOOKS ── */
+function renderBooks(){
+  renderGoalList('books-list',S.goals.books,(item,idx)=>{
+    const row=document.createElement('div');
+    row.className='goal-item'+(item.completed?' done':'');
+    row.innerHTML=`
+      <span class="goal-chk${item.completed?' checked':''}" title="Mark finished"></span>
+      <div class="goal-body"><div class="goal-title">${escHtml(item.title)}</div></div>
+      <button class="goal-del" title="Remove">&#215;</button>`;
+    row.querySelector('.goal-chk').addEventListener('click',e=>{
+      e.stopPropagation();
+      item.completed=!item.completed;
+      row.classList.toggle('done',item.completed);
+      row.querySelector('.goal-chk').classList.toggle('checked',item.completed);
+      saveGoals();
+    });
+    row.querySelector('.goal-del').addEventListener('click',e=>{
+      e.stopPropagation();
+      S.goals.books.splice(idx,1);
+      saveGoals();renderBooks();updateGoalCounts();
+    });
+    return row;
+  });
+  updateGoalCounts();
+}
+ 
+document.getElementById('book-add-btn').addEventListener('click',()=>{
+  const title=document.getElementById('book-title-inp').value.trim();
+  if(!title)return;
+  S.goals.books.push({id:uid(),title,completed:false});
+  saveGoals();document.getElementById('book-title-inp').value='';renderBooks();
+});
+document.getElementById('book-title-inp').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('book-add-btn').click();});
+ 
+/* ── GAMES ── */
+function renderGames(){
+  renderGoalList('games-list',S.goals.games,(item,idx)=>{
+    const row=document.createElement('div');
+    row.className='goal-item'+(item.completed?' done':'');
+    row.innerHTML=`
+      <span class="goal-chk${item.completed?' checked':''}" title="Mark finished"></span>
+      <div class="goal-body"><div class="goal-title">${escHtml(item.title)}</div></div>
+      <button class="goal-del" title="Remove">&#215;</button>`;
+    row.querySelector('.goal-chk').addEventListener('click',e=>{
+      e.stopPropagation();
+      item.completed=!item.completed;
+      row.classList.toggle('done',item.completed);
+      row.querySelector('.goal-chk').classList.toggle('checked',item.completed);
+      saveGoals();
+    });
+    row.querySelector('.goal-del').addEventListener('click',e=>{
+      e.stopPropagation();
+      S.goals.games.splice(idx,1);
+      saveGoals();renderGames();updateGoalCounts();
+    });
+    return row;
+  });
+  updateGoalCounts();
+}
+ 
+document.getElementById('game-add-btn').addEventListener('click',()=>{
+  const title=document.getElementById('game-title-inp').value.trim();
+  if(!title)return;
+  S.goals.games.push({id:uid(),title,completed:false});
+  saveGoals();document.getElementById('game-title-inp').value='';renderGames();
+});
+document.getElementById('game-title-inp').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('game-add-btn').click();});
+ 
+/* ── COURSES ── */
+function renderCourses(){
+  renderGoalList('courses-list',S.goals.courses,(item,idx)=>{
+    const pct=Math.max(0,Math.min(100,item.progress||0));
+    const row=document.createElement('div');
+    row.className='goal-item'+(item.completed?' done':'');
+    row.innerHTML=`
+      <span class="goal-chk${item.completed?' checked':''}" title="Mark completed"></span>
+      <div class="goal-body">
+        <div class="goal-title">${escHtml(item.title)}</div>
+        <div class="course-progress-wrap">
+          <div class="course-progress-track">
+            <div class="course-progress-fill" style="width:${pct}%"></div>
+          </div>
+          <input class="course-pct-inp" type="number" min="0" max="100"
+            value="${pct}" title="Progress %" ${item.completed?'disabled':''}>
+        </div>
+      </div>
+      <button class="goal-del" title="Remove">&#215;</button>`;
+ 
+    const chk=row.querySelector('.goal-chk');
+    const pctInp=row.querySelector('.course-pct-inp');
+    const fill=row.querySelector('.course-progress-fill');
+ 
+    chk.addEventListener('click',e=>{
+      e.stopPropagation();
+      item.completed=!item.completed;
+      if(item.completed){item.progress=100;pctInp.value=100;fill.style.width='100%';pctInp.disabled=true;}
+      else{pctInp.disabled=false;}
+      row.classList.toggle('done',item.completed);
+      chk.classList.toggle('checked',item.completed);
+      saveGoals();
+    });
+ 
+    pctInp.addEventListener('input',e=>{
+      e.stopPropagation();
+      let v=parseInt(pctInp.value,10);
+      if(isNaN(v))v=0;
+      v=Math.max(0,Math.min(100,v));
+      item.progress=v;
+      fill.style.width=v+'%';
+      saveGoals();
+    });
+    pctInp.addEventListener('mousedown',e=>e.stopPropagation());
+    pctInp.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
+ 
+    row.querySelector('.goal-del').addEventListener('click',e=>{
+      e.stopPropagation();
+      S.goals.courses.splice(idx,1);
+      saveGoals();renderCourses();updateGoalCounts();
+    });
+    return row;
+  });
+  updateGoalCounts();
+}
+ 
+document.getElementById('course-add-btn').addEventListener('click',()=>{
+  const title=document.getElementById('course-title-inp').value.trim();
+  if(!title)return;
+  S.goals.courses.push({id:uid(),title,progress:0,completed:false});
+  saveGoals();document.getElementById('course-title-inp').value='';renderCourses();
+});
+document.getElementById('course-title-inp').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('course-add-btn').click();});
+ 
 /* ═══════ SCROLL SYNC ═══════ */
 const gridScroll=document.getElementById('grid-scroll');
 const headerWrap=document.getElementById('grid-header-wrap');
@@ -1442,6 +1885,7 @@ document.getElementById('mob-menu-btn').addEventListener('click',()=>{
 buildSwatches('color-swatches','catIdx');
 renderCal(); renderSbWeek(); renderBanner(); renderHeader();
 renderGrid(); renderTasks(); renderRewards(); renderScorePanel();
+renderBills(); renderBooks(); renderGames(); renderCourses();
  
 const t8=SLOT_TIMES.findIndex(t=>t.h===8&&t.m===0);
 if(t8>=0)gridScroll.scrollTop=t8*SLOT_H_PX;
@@ -1450,4 +1894,3 @@ if(t8>=0)gridScroll.scrollTop=t8*SLOT_H_PX;
 </script>
 </body>
 </html>
- 
