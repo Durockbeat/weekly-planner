@@ -419,6 +419,57 @@ body {
 .ev-resize-bar { width:28px; height:3px; border-radius:2px; background:currentColor; opacity:.3; }
 .ev-block.resizing .ev-resize { opacity:1; }
  
+/* ── NOTE AREA ── */
+.ev-note-wrap {
+  padding: 0 6px 3px 6px;
+  flex-shrink: 0;
+  /* hidden when block is too short */
+}
+.ev-note-text {
+  font-size: 9px;
+  line-height: 1.35;
+  opacity: .62;
+  /* max 3 lines then ellipsis */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  word-break: break-word;
+  cursor: text;
+  transition: opacity .15s;
+}
+.ev-note-text:hover { opacity: .9; }
+.ev-note-text.empty {
+  opacity: .3;
+  font-style: italic;
+}
+/* inline textarea while editing */
+.ev-note-editor {
+  width: 100%;
+  font-size: 9px;
+  line-height: 1.35;
+  font-family: 'DM Mono', monospace;
+  background: rgba(0,0,0,.25);
+  color: inherit;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 3px;
+  padding: 2px 4px;
+  resize: none;
+  outline: none;
+  max-height: 52px;  /* ~3 lines */
+  overflow-y: auto;
+  display: block;
+}
+.ev-note-editor::placeholder { color: inherit; opacity: .38; }
+/* note indicator dot when block is short and has a note */
+.ev-note-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: currentColor; opacity: .45;
+  flex-shrink: 0; align-self: center;
+  display: none;
+}
+.ev-note-dot.visible { display: block; }
+ 
 /* drag ghost */
 #drag-ghost { position:fixed; pointer-events:none; z-index:9999; display:none;
   padding:5px 10px; border-radius:var(--radius-sm); font-size:11px;
@@ -688,8 +739,11 @@ function load(){
     }catch(e){}
   }
   tasks=tasks.map(t=>{if(t.catIdx===undefined)t.catIdx=Math.min(t.colorIdx||0,5);return t;});
-  // ensure all events have done field
-  Object.values(pd).forEach(wk=>{if(Array.isArray(wk))wk.forEach(ev=>{if(ev.done===undefined)ev.done=false;});});
+  // ensure all events have done + notes fields
+  Object.values(pd).forEach(wk=>{if(Array.isArray(wk))wk.forEach(ev=>{
+    if(ev.done===undefined)ev.done=false;
+    if(ev.notes===undefined)ev.notes='';
+  });});
   return{pd,tasks,rewards};
 }
 function saveAll(){
@@ -972,6 +1026,10 @@ function placeEventBlock(ev,task,di){
   const endLabel=minToTime(startMin+ev.duration);
   const pts=evPts(ev.duration);
   const showTime=h>=SLOT_H_PX*2;
+  // Show note area only when block is tall enough (≥ 3 slots = 72px)
+  const showNote=h>=SLOT_H_PX*3;
+  // Show small indicator dot when note exists but block is short
+  const hasNote=ev.notes&&ev.notes.trim().length>0;
  
   const block=document.createElement('div');
   block.className='ev-block'+(ev.done?' ev-done':'');
@@ -987,11 +1045,15 @@ function placeEventBlock(ev,task,di){
         ${showTime?`<span class="ev-time">${ev.start} – ${endLabel}</span>`:''}
         <span class="ev-pts">+${pts}pts</span>
       </div>
+      <span class="ev-note-dot${hasNote&&!showNote?' visible':''}" title="Has note"></span>
       <span class="ev-del" title="Remove">&#215;</span>
     </div>
+    ${showNote?`<div class="ev-note-wrap">
+      <div class="ev-note-text${!hasNote?' empty':''}">${hasNote?escHtml(ev.notes):'Add a note…'}</div>
+    </div>`:''}
     <div class="ev-resize"><div class="ev-resize-bar"></div></div>`;
  
-  // checkbox
+  // ── checkbox
   const chk=block.querySelector('.ev-check');
   chk.addEventListener('click',e=>{
     e.stopPropagation();
@@ -1002,29 +1064,119 @@ function placeEventBlock(ev,task,di){
     renderScorePanel();
   });
  
-  // delete
+  // ── delete
   block.querySelector('.ev-del').addEventListener('click',e=>{
     e.stopPropagation();removeEvent(ev.id);
   });
  
-  // move (mouse)
+  // ── note click → inline edit
+  const noteWrap=block.querySelector('.ev-note-wrap');
+  if(noteWrap){
+    const noteText=noteWrap.querySelector('.ev-note-text');
+    noteText.addEventListener('click',e=>{
+      e.stopPropagation();
+      openNoteEditor(ev,noteWrap,noteText,block);
+    });
+  }
+ 
+  // ── move (mouse) — guard against note editor and resize
   block.addEventListener('mousedown',e=>{
-    if(e.target.closest('.ev-resize')||e.target.classList.contains('ev-del')||e.target.classList.contains('ev-check'))return;
+    if(e.target.closest('.ev-resize'))return;
+    if(e.target.classList.contains('ev-del'))return;
+    if(e.target.classList.contains('ev-check'))return;
+    if(e.target.classList.contains('ev-note-text'))return;
+    if(e.target.classList.contains('ev-note-editor'))return;
     e.preventDefault();startEventDrag(e,ev,di,block,c);
   });
-  // move (touch)
+  // ── move (touch)
   block.addEventListener('touchstart',e=>{
-    if(e.target.closest('.ev-resize')||e.target.classList.contains('ev-del')||e.target.classList.contains('ev-check'))return;
+    if(e.target.closest('.ev-resize'))return;
+    if(e.target.classList.contains('ev-del'))return;
+    if(e.target.classList.contains('ev-check'))return;
+    if(e.target.classList.contains('ev-note-text'))return;
+    if(e.target.classList.contains('ev-note-editor'))return;
     e.preventDefault();startEventTouchDrag(e,ev,di,block,c);
   },{passive:false});
  
-  // resize
+  // ── resize
   const rh=block.querySelector('.ev-resize');
   rh.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();startResize(e,ev,block);});
   rh.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();startTouchResize(e,ev,block);},{passive:false});
  
   dayCols[di].appendChild(block);
 }
+ 
+/* ── HTML escape helper ── */
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+ 
+/* ── Note inline editor ── */
+// Track currently open editor so we can close it on outside click
+let activeNoteEvId = null;
+let activeNoteClose = null;
+ 
+function openNoteEditor(ev, noteWrap, noteText, block){
+  // Close any already-open editor first
+  if(activeNoteClose) activeNoteClose();
+ 
+  activeNoteEvId = ev.id;
+  noteText.style.display='none';
+ 
+  const ta=document.createElement('textarea');
+  ta.className='ev-note-editor';
+  ta.value=ev.notes||'';
+  ta.placeholder='Add a note…';
+  ta.rows=3;
+  noteWrap.appendChild(ta);
+  ta.focus();
+  // place cursor at end
+  ta.selectionStart=ta.selectionEnd=ta.value.length;
+ 
+  function save(){
+    const val=ta.value;  // preserve internal newlines for storage
+    ev.notes=val;
+    saveAll();
+    // Update display without full re-render
+    const trimmed=val.trim();
+    noteText.innerHTML=trimmed?escHtml(trimmed):'Add a note…';
+    noteText.classList.toggle('empty',!trimmed);
+    noteText.style.display='';
+    ta.remove();
+    // Update indicator dot
+    const dot=block.querySelector('.ev-note-dot');
+    if(dot){
+      const h=parseFloat(block.style.height);
+      const showNote=h>=SLOT_H_PX*3;
+      dot.classList.toggle('visible',trimmed.length>0&&!showNote);
+    }
+    activeNoteEvId=null; activeNoteClose=null;
+  }
+ 
+  activeNoteClose=save;
+ 
+  // Enter (without shift) saves
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();save();}
+    if(e.key==='Escape'){ta.value=ev.notes||'';save();}
+    e.stopPropagation(); // don't let keydown bubble to block drag handlers
+  });
+  // Stop pointer events from triggering drag
+  ta.addEventListener('mousedown',e=>e.stopPropagation());
+  ta.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
+}
+ 
+// Click outside any open note editor → save it
+document.addEventListener('mousedown',e=>{
+  if(activeNoteClose&&!e.target.classList.contains('ev-note-editor')){
+    activeNoteClose();
+  }
+},{capture:true});
+document.addEventListener('touchstart',e=>{
+  if(activeNoteClose&&!e.target.classList.contains('ev-note-editor')){
+    activeNoteClose();
+  }
+},{capture:true,passive:true});
  
 /* ═══════ DROP PREVIEW ═══════ */
 function updateDropPreview(di,startMin){
@@ -1047,7 +1199,7 @@ function handleGridDrop(di,rawStartMin){
   if(dragTaskId){
     const duration=30;
     if(hasOverlap(day,startMin,duration))return;
-    curEvents().push({id:uid(),taskId:dragTaskId,day,start:minToTime(startMin),duration,done:false});
+    curEvents().push({id:uid(),taskId:dragTaskId,day,start:minToTime(startMin),duration,done:false,notes:''});
     saveAll();renderEvents();renderScorePanel();dragTaskId=null;
   } else if(dragEvId){
     const ev=curEvents().find(e=>e.id===dragEvId);if(!ev)return;
@@ -1120,11 +1272,18 @@ function startResize(e,ev,block){
     if(startMin+nd>GRID_END_MIN+STEP)nd=GRID_END_MIN+STEP-startMin;
     const sd=Math.max(STEP,Math.round(nd/STEP)*STEP);
     const wo=hasOverlap(ev.day,startMin,sd,ev.id);
-    block.style.height=durToPx(wo?ev.duration:sd)+'px';
+    const newH=durToPx(wo?ev.duration:sd);
+    block.style.height=newH+'px';
     const inner=block.querySelector('.ev-time');
     if(inner)inner.textContent=`${ev.start} – ${minToTime(startMin+(wo?ev.duration:sd))}`;
     const ptsEl=block.querySelector('.ev-pts');
     if(ptsEl)ptsEl.textContent=`+${evPts(wo?ev.duration:sd)}pts`;
+    // show/hide note dot vs note area as height crosses threshold
+    const noteWrap=block.querySelector('.ev-note-wrap');
+    const noteDot=block.querySelector('.ev-note-dot');
+    const hasNoteContent=ev.notes&&ev.notes.trim().length>0;
+    if(noteWrap) noteWrap.style.display=newH>=SLOT_H_PX*3?'':'none';
+    if(noteDot)  noteDot.classList.toggle('visible',hasNoteContent&&newH<SLOT_H_PX*3);
   }
   function onUp(ue){
     document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);
